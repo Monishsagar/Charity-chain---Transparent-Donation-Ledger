@@ -17,6 +17,10 @@ CREATE TABLE IF NOT EXISTS profiles (
 -- Enable RLS on profiles
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can read all profiles" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+
 CREATE POLICY "Users can read all profiles" ON profiles
   FOR SELECT USING (true);
 
@@ -41,6 +45,10 @@ CREATE TABLE IF NOT EXISTS ngos (
 
 ALTER TABLE ngos ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Anyone can read verified NGOs" ON ngos;
+DROP POLICY IF EXISTS "NGO can read own profile" ON ngos;
+
 CREATE POLICY "Anyone can read verified NGOs" ON ngos
   FOR SELECT USING (verified = true);
 
@@ -64,6 +72,9 @@ CREATE TABLE IF NOT EXISTS campaigns (
 
 ALTER TABLE campaigns ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Anyone can read active campaigns" ON campaigns;
+
 CREATE POLICY "Anyone can read active campaigns" ON campaigns
   FOR SELECT USING (status = 'active' OR ngo_id IN (SELECT id FROM ngos WHERE user_id = auth.uid()));
 
@@ -84,6 +95,11 @@ CREATE TABLE IF NOT EXISTS donations (
 
 -- NO DELETE policy on donations table for audit trail
 ALTER TABLE donations ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Anyone can read completed donations" ON donations;
+DROP POLICY IF EXISTS "Donor can read own donations" ON donations;
+DROP POLICY IF EXISTS "NGO can read donations to their campaigns" ON donations;
 
 CREATE POLICY "Anyone can read completed donations" ON donations
   FOR SELECT USING (status = 'completed');
@@ -110,6 +126,10 @@ CREATE TABLE IF NOT EXISTS expenditures (
 
 ALTER TABLE expenditures ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Anyone can read verified expenditures" ON expenditures;
+DROP POLICY IF EXISTS "NGO can read own expenditures" ON expenditures;
+
 CREATE POLICY "Anyone can read verified expenditures" ON expenditures
   FOR SELECT USING (verified = true);
 
@@ -127,6 +147,9 @@ CREATE TABLE IF NOT EXISTS impact_attributions (
 );
 
 ALTER TABLE impact_attributions ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Anyone can read attributions" ON impact_attributions;
 
 CREATE POLICY "Anyone can read attributions" ON impact_attributions
   FOR SELECT USING (true);
