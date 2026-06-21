@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { getProfile, getDonations, getCampaigns } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import { Profile, Donation, CampaignWithDetails } from '@/lib/types';
 import { DashboardHeader } from '@/components/dashboard/header';
 import Link from 'next/link';
@@ -26,15 +27,26 @@ export default function DashboardPage() {
           return;
         }
 
-        const profileData = await getProfile(user.id);
+        let profileData;
+        try {
+          profileData = await getProfile(user.id);
+        } catch (profileErr: any) {
+          // Profile row is missing — user signed up but profile was not created
+          // Sign them out and redirect to re-register with a clear message
+          if (supabase) await supabase.auth.signOut();
+          router.push('/auth/register?reason=no_profile');
+          return;
+        }
+
         setProfile(profileData);
 
         if (profileData.role === 'donor') {
           const donationData = await getDonations(user.id);
           setDonations(donationData);
         } else if (profileData.role === 'ngo') {
-          const campaignData = await getCampaigns();
-          const userCampaigns = campaignData.filter(c => c.ngo?.user_id === user.id);
+          const campaignData = await getCampaigns()
+            .catch(() => []);
+          const userCampaigns = campaignData.filter((c: any) => c.ngo?.user_id === user.id);
           setCampaigns(userCampaigns);
         }
       } catch (err: any) {
@@ -173,7 +185,7 @@ export default function DashboardPage() {
                 <div className="text-3xl font-bold text-primary">{campaigns.length}</div>
               </div>
               <div className="bg-card border border-border rounded-lg p-6">
-                <div className="text-sm text-muted-foreground mb-1">Total Collected</div>
+                <div className="text-sm text-muted-foreground mb-1">Available Balance</div>
                 <div className="text-3xl font-bold text-accent">
                   ₹{campaigns.reduce((sum, c) => sum + (c.collected_amount || 0), 0).toLocaleString()}
                 </div>
@@ -188,6 +200,34 @@ export default function DashboardPage() {
                 <div className="text-sm text-muted-foreground mb-1">Pending Verification</div>
                 <div className="text-3xl font-bold text-primary">0</div>
               </div>
+            </div>
+
+            {/* Quick Actions for NGO */}
+            <div className="grid md:grid-cols-3 gap-4 mb-10">
+              <Link href="/dashboard/campaigns"
+                className="flex items-center gap-3 bg-primary/10 border border-primary/20 rounded-lg p-4 hover:bg-primary/20 transition">
+                <span className="text-2xl">📋</span>
+                <div>
+                  <div className="font-semibold">Campaigns</div>
+                  <div className="text-xs text-muted-foreground">Create & manage campaigns</div>
+                </div>
+              </Link>
+              <Link href="/dashboard/expenditures"
+                className="flex items-center gap-3 bg-accent/10 border border-accent/20 rounded-lg p-4 hover:bg-accent/20 transition">
+                <span className="text-2xl">💸</span>
+                <div>
+                  <div className="font-semibold">Expenditures</div>
+                  <div className="text-xs text-muted-foreground">Post & track fund usage</div>
+                </div>
+              </Link>
+              <Link href="/ledger"
+                className="flex items-center gap-3 bg-secondary/10 border border-secondary/20 rounded-lg p-4 hover:bg-secondary/20 transition">
+                <span className="text-2xl">📖</span>
+                <div>
+                  <div className="font-semibold">Ledger</div>
+                  <div className="text-xs text-muted-foreground">View public donation ledger</div>
+                </div>
+              </Link>
             </div>
 
             {/* Campaigns List */}

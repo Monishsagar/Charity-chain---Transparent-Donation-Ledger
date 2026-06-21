@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { getNGOs } from '@/lib/api';
 import { NGO } from '@/lib/types';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Navbar } from '@/components/navbar';
 
 export default function NGOsPage() {
+  const router = useRouter();
   const [ngos, setNgos] = useState<NGO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -29,27 +32,7 @@ export default function NGOsPage() {
   return (
     <main className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-primary hover:text-primary/80">
-            CharityChain
-          </Link>
-          <div className="flex gap-4">
-            <Link href="/campaigns" className="text-foreground hover:text-primary transition">
-              Campaigns
-            </Link>
-            <Link href="/ledger" className="text-foreground hover:text-primary transition">
-              Ledger
-            </Link>
-            <Link href="/ngos" className="text-foreground font-medium border-b-2 border-primary">
-              NGOs
-            </Link>
-            <Button asChild variant="default" size="sm">
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Page Header */}
       <section className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-12">
@@ -83,48 +66,54 @@ export default function NGOsPage() {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {ngos.map((ngo) => (
-                <Link key={ngo.id} href={`/ngos/${ngo.id}`}>
-                  <div className="bg-card border border-border rounded-lg overflow-hidden hover:shadow-lg transition h-full flex flex-col">
-                    {ngo.logo_url ? (
-                      <div className="w-full h-40 bg-primary/10 flex items-center justify-center p-4">
-                        <img src={ngo.logo_url} alt={ngo.name} className="max-w-full max-h-full object-contain" />
-                      </div>
-                    ) : (
-                      <div className="w-full h-40 bg-primary/10 flex items-center justify-center">
-                        <div className="text-4xl">🏢</div>
-                      </div>
-                    )}
-                    
-                    <div className="p-6 flex-1 flex flex-col">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-lg font-bold">{ngo.name}</h3>
+                <div
+                  key={ngo.id}
+                  className="bg-card border border-border rounded-lg overflow-hidden hover:shadow-lg transition h-full flex flex-col cursor-pointer"
+                  onClick={() => router.push(`/ngos/${ngo.id}`)}
+                >
+                  {ngo.logo_url ? (
+                    <div className="w-full h-40 bg-primary/10 flex items-center justify-center p-4">
+                      <img src={ngo.logo_url} alt={ngo.name} className="max-w-full max-h-full object-contain" />
+                    </div>
+                  ) : (
+                    <div className="w-full h-40 bg-primary/10 flex items-center justify-center">
+                      <div className="text-4xl">🏢</div>
+                    </div>
+                  )}
+                  
+                  <div className="p-6 flex-1 flex flex-col">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-lg font-bold">{ngo.name}</h3>
+                      {ngo.verified && (
                         <span className="inline-block px-2 py-1 bg-accent/20 text-accent-foreground text-xs rounded">
                           Verified
                         </span>
-                      </div>
-                      
-                      <p className="text-muted-foreground text-sm mb-4 line-clamp-3 flex-1">
-                        {ngo.mission}
-                      </p>
-
-                      {ngo.website && (
-                        <a
-                          href={ngo.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline text-sm mb-4"
-                        >
-                          Visit Website →
-                        </a>
                       )}
-
-                      <Button className="w-full" size="sm">
-                        View Campaigns
-                      </Button>
                     </div>
+                    
+                    <p className="text-muted-foreground text-sm mb-4 line-clamp-3 flex-1">
+                      {ngo.mission}
+                    </p>
+
+                    {ngo.website && (
+                      <a
+                        href={ngo.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline text-sm mb-4 inline-block"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Visit Website →
+                      </a>
+                    )}
+
+                    <Button className="w-full" size="sm">
+                      View Campaigns
+                    </Button>
                   </div>
-                </Link>
+                </div>
               ))}
+
             </div>
           )}
         </div>

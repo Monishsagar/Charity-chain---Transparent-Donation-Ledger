@@ -5,6 +5,7 @@ import { getCampaigns } from '@/lib/api';
 import { CampaignWithDetails } from '@/lib/types';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Navbar } from '@/components/navbar';
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<CampaignWithDetails[]>([]);
@@ -29,27 +30,7 @@ export default function CampaignsPage() {
   return (
     <main className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-primary hover:text-primary/80">
-            CharityChain
-          </Link>
-          <div className="flex gap-4">
-            <Link href="/campaigns" className="text-foreground font-medium border-b-2 border-primary">
-              Campaigns
-            </Link>
-            <Link href="/ledger" className="text-foreground hover:text-primary transition">
-              Ledger
-            </Link>
-            <Link href="/ngos" className="text-foreground hover:text-primary transition">
-              NGOs
-            </Link>
-            <Button asChild variant="default" size="sm">
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Page Header */}
       <section className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-12">

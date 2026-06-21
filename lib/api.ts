@@ -33,7 +33,6 @@ export async function getNGOs() {
   const { data, error } = await supabase
     .from('ngos')
     .select('*')
-    .eq('verified', true)
     .order('created_at', { ascending: false });
   
   if (error) throw error;
@@ -148,6 +147,10 @@ export async function createExpenditure(expenditure: Omit<Expenditure, 'id' | 'c
     .single();
   
   if (error) throw error;
+
+  // Recalculate campaign balance: donations - expenditures
+  await updateCampaignCollectedAmount(expenditure.campaign_id);
+
   return data as Expenditure;
 }
 
@@ -187,21 +190,32 @@ export async function getDonationAttributions(donationId: string) {
   return data as ImpactAttribution[];
 }
 
-// Helper function to update campaign collected amount
+// Helper function to update campaign collected amount (donations - expenditures)
 async function updateCampaignCollectedAmount(campaignId: string) {
-  const { data, error: fetchError } = await supabase
+  const { data: donationData, error: donationError } = await supabase
     .from('donations')
     .select('amount')
     .eq('campaign_id', campaignId)
     .eq('status', 'completed');
-  
-  if (fetchError) return;
-  
-  const totalAmount = data?.reduce((sum, d) => sum + d.amount, 0) || 0;
-  
+
+  if (donationError) return;
+
+  const totalDonations = donationData?.reduce((sum, d) => sum + d.amount, 0) || 0;
+
+  const { data: expenditureData, error: expenditureError } = await supabase
+    .from('expenditures')
+    .select('amount')
+    .eq('campaign_id', campaignId);
+
+  if (expenditureError) return;
+
+  const totalExpenditures = expenditureData?.reduce((sum, e) => sum + e.amount, 0) || 0;
+
+  const availableBalance = Math.max(totalDonations - totalExpenditures, 0);
+
   await supabase
     .from('campaigns')
-    .update({ collected_amount: totalAmount })
+    .update({ collected_amount: availableBalance })
     .eq('id', campaignId);
 }
 
@@ -220,19 +234,28 @@ export async function searchCampaigns(query: string) {
   return data as CampaignWithDetails[];
 }
 
-export async function getPublicLedger() {
-  const { data, error } = await supabase
+export async function getPublicLedger(ngoId?: string) {
+  let query = supabase
     .from('donations')
     .select(`
       id,
       amount,
       created_at,
       donor:profiles(full_name),
-      campaign:campaigns(title, ngo:ngos(name))
+      campaign:campaigns(title, ngo_id, ngo:ngos(name))
     `)
     .eq('status', 'completed')
     .order('created_at', { ascending: false });
-  
+
+  const { data, error } = await query;
+
   if (error) throw error;
-  return data as any[];
+
+  // Filter client-side by ngo_id when scoping to a specific NGO
+  let result = data as any[];
+  if (ngoId) {
+    result = result.filter((entry) => entry.campaign?.ngo_id === ngoId);
+  }
+
+  return result;
 }

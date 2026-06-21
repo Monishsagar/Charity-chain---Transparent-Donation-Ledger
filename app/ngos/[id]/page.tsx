@@ -1,12 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { getNGO, getCampaigns } from '@/lib/api';
 import { NGO, CampaignWithDetails } from '@/lib/types';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Navbar } from '@/components/navbar';
 
-export default function NGODetailPage({ params }: { params: { id: string } }) {
+export default function NGODetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const unwrappedParams = use(params);
+  const id = unwrappedParams.id;
+
   const [ngo, setNgo] = useState<NGO | null>(null);
   const [campaigns, setCampaigns] = useState<CampaignWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -15,10 +19,10 @@ export default function NGODetailPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     async function loadData() {
       try {
-        const ngoData = await getNGO(params.id);
+        const ngoData = await getNGO(id);
         setNgo(ngoData);
         
-        const campaignData = await getCampaigns(params.id);
+        const campaignData = await getCampaigns(id);
         setCampaigns(campaignData);
       } catch (err: any) {
         setError(err.message || 'Failed to load NGO');
@@ -28,18 +32,12 @@ export default function NGODetailPage({ params }: { params: { id: string } }) {
     }
 
     loadData();
-  }, [params.id]);
+  }, [id]);
 
   if (loading) {
     return (
       <main className="min-h-screen bg-background">
-        <nav className="border-b border-border bg-card">
-          <div className="container mx-auto px-4 py-4">
-            <Link href="/" className="text-2xl font-bold text-primary">
-              CharityChain
-            </Link>
-          </div>
-        </nav>
+        <Navbar />
         <div className="container mx-auto px-4 py-12 text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -50,13 +48,7 @@ export default function NGODetailPage({ params }: { params: { id: string } }) {
   if (error || !ngo) {
     return (
       <main className="min-h-screen bg-background">
-        <nav className="border-b border-border bg-card">
-          <div className="container mx-auto px-4 py-4">
-            <Link href="/" className="text-2xl font-bold text-primary">
-              CharityChain
-            </Link>
-          </div>
-        </nav>
+        <Navbar />
         <div className="container mx-auto px-4 py-12 text-center">
           <p className="text-red-600 mb-4">{error || 'NGO not found'}</p>
           <Button asChild variant="outline">
@@ -72,27 +64,8 @@ export default function NGODetailPage({ params }: { params: { id: string } }) {
   return (
     <main className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-primary hover:text-primary/80">
-            CharityChain
-          </Link>
-          <div className="flex gap-4">
-            <Link href="/campaigns" className="text-foreground hover:text-primary transition">
-              Campaigns
-            </Link>
-            <Link href="/ledger" className="text-foreground hover:text-primary transition">
-              Ledger
-            </Link>
-            <Link href="/ngos" className="text-foreground hover:text-primary transition">
-              NGOs
-            </Link>
-            <Button asChild variant="default" size="sm">
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
+
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-12">

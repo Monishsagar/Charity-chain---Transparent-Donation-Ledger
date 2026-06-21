@@ -33,7 +33,29 @@ export async function signUp(
 
   if (profileError) throw profileError;
 
+  // If registering as NGO, also create an NGO record
+  if (role === 'ngo') {
+    const { error: ngoError } = await supabase
+      .from('ngos')
+      .insert([
+        {
+          user_id: authData.user.id,
+          name: fullName,
+          description: 'We are an NGO working to create positive change.',
+          mission: 'Making a difference in the lives of people who need it most.',
+          verified: true,
+        },
+      ]);
+
+
+    // Don't throw — NGO record creation failure shouldn't block login
+    if (ngoError) {
+      console.warn('[CharityChain] NGO profile auto-create failed:', ngoError.message);
+    }
+  }
+
   return authData.user;
+
 }
 
 export async function signIn(email: string, password: string) {

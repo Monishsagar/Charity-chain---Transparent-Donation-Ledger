@@ -1,29 +1,86 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Navbar } from '@/components/navbar';
+import { getCurrentUser } from '@/lib/auth';
+import { getProfile, getCampaigns, getNGOs, getDonations } from '@/lib/api';
 
 export default function Home() {
+  const router = useRouter();
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [stats, setStats] = useState({
+    totalCollected: 0,
+    activeCampaigns: 0,
+    verifiedNgos: 0,
+    happyDonors: 0,
+  });
+
+  useEffect(() => {
+    async function init() {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          try {
+            const profile = await getProfile(user.id);
+            if (profile) {
+              router.replace('/dashboard');
+              return;
+            }
+          } catch {
+            // Profile missing, treat as guest
+          }
+        }
+      } catch {
+        // Ignored
+      } finally {
+        setCheckingAuth(false);
+      }
+
+      // Fetch dynamic stats for guests
+      try {
+        const [campaigns, ngos, donations] = await Promise.all([
+          getCampaigns().catch(() => []),
+          getNGOs().catch(() => []),
+          getDonations().catch(() => []),
+        ]);
+
+        const totalCollected = donations
+          .filter((d: any) => d.status === 'completed')
+          .reduce((sum: number, d: any) => sum + d.amount, 0);
+
+        const activeCampaigns = campaigns.filter((c: any) => c.status === 'active').length;
+        const verifiedNgos = ngos.length;
+        const happyDonors = new Set(donations.map((d: any) => d.donor_id)).size;
+
+        setStats({
+          totalCollected,
+          activeCampaigns,
+          verifiedNgos,
+          happyDonors,
+        });
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+      }
+    }
+
+    init();
+  }, [router]);
+
+  if (checkingAuth) {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen">
       {/* Navigation */}
-      <nav className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="text-2xl font-bold text-primary">CharityChain</div>
-          <div className="flex gap-4">
-            <Link href="/campaigns" className="text-foreground hover:text-primary transition">
-              Campaigns
-            </Link>
-            <Link href="/ledger" className="text-foreground hover:text-primary transition">
-              Ledger
-            </Link>
-            <Link href="/ngos" className="text-foreground hover:text-primary transition">
-              NGOs
-            </Link>
-            <Button asChild variant="default" size="sm">
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-20">
@@ -39,7 +96,7 @@ export default function Home() {
               <Link href="/auth/register">Start Giving</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <Link href="/campaigns">Explore Campaigns</Link>
+              <Link href="/auth/login">Explore Campaigns</Link>
             </Button>
           </div>
         </div>
@@ -92,19 +149,27 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-4xl font-bold text-primary mb-2">₹0</div>
+              <div className="text-4xl font-bold text-primary mb-2">
+                ₹{stats.totalCollected.toLocaleString('en-IN')}
+              </div>
               <p className="text-muted-foreground">Total Collected</p>
             </div>
             <div>
-              <div className="text-4xl font-bold text-accent mb-2">0</div>
+              <div className="text-4xl font-bold text-accent mb-2">
+                {stats.activeCampaigns}
+              </div>
               <p className="text-muted-foreground">Active Campaigns</p>
             </div>
             <div>
-              <div className="text-4xl font-bold text-secondary mb-2">0</div>
-              <p className="text-muted-foreground">Verified NGOs</p>
+              <div className="text-4xl font-bold text-secondary mb-2">
+                {stats.verifiedNgos}
+              </div>
+              <p className="text-muted-foreground">NGO Partners</p>
             </div>
             <div>
-              <div className="text-4xl font-bold text-primary mb-2">0</div>
+              <div className="text-4xl font-bold text-primary mb-2">
+                {stats.happyDonors}
+              </div>
               <p className="text-muted-foreground">Happy Donors</p>
             </div>
           </div>
