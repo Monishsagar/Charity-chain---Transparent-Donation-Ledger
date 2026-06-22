@@ -7,7 +7,7 @@ A production-ready Next.js 16 application for tracking donations through the com
 ### Core Functionality
 - **Donor Dashboard**: Track donations, view impact timeline, and see how funds are being used
 - **NGO Dashboard**: Create campaigns, post expenditures, and manage fund utilization
-- **Public Ledger**: Immutable record of all completed donations (no delete policy)
+- **Public Ledger**: Immutable record of all completed donations and no delete policy
 - **Impact Attribution**: Automatic linking of donations to expenditures with real-world impact metrics
 - **Transparent Campaigns**: Browse active campaigns with detailed progress tracking
 - **NGO Directory**: Verified non-profits with mission statements and active campaigns
